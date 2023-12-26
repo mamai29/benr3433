@@ -28,7 +28,7 @@ const options = {
             version: '1.0.0',
         },
     },
-    apis: ['./main/*.js'],
+    apis: ['./main.js'],
 }
 const swaggerSpec = swaggerJSDoc(options);
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
