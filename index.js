@@ -15,8 +15,8 @@ app.listen(port, () => {
 const express = require('express');
 const app = express();
 const port =  process.env.PORT;
-app.use(express.json());
 
+app.use(express.json());
 
 const swaggerUi = require('swagger-ui-express');
 const swaggerJSDoc = require('swagger-jsdoc');
@@ -33,7 +33,25 @@ const options = {
 const swaggerSpec = swaggerJSDoc(options);
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
-
+/**
+ * @swagger
+ * /:/login:
+ *  post:
+ *     description: Login to the application
+ *    requestBody:
+ *      content:
+ *       application/json:
+ *       schema:
+ *       type: object
+ *      properties:
+ *      username:
+ *      type: string
+ *     password:
+ *     type: string
+ *   required:
+ *  - username
+ *  - password
+ 
 
 
 
