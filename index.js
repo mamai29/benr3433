@@ -1,11 +1,11 @@
 const express = require('express');
 const session = require('express-session');
 const app = express();
-const port = process.env.PORT;
+const port = 3000;
 
 // session middleware
 app.use(session({
-    secret: process.env.SECRET, // a random string used for encryption
+    secret: 'supercalifragilisticexpialidocious', // a random string used for encryption
     resave: false, // don't save session if unmodified
     saveUninitialized: false // don't create session until something stored
 }));
@@ -48,7 +48,7 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs));
 const {
     MongoClient
 } = require('mongodb'); // import the mongodb client
-const url = process.env.URL; // the url to the database
+const url = 'mongodb+srv://maisarah:atlas0122@cluster0.eb6q4xm.mongodb.net/'; // the url to the database
 const client = new MongoClient(url); // create a new mongodb client
 
 // bcrypt middleware
