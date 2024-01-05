@@ -50,7 +50,7 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs));
 const {
     MongoClient
 } = require('mongodb'); // import the mongodb client
-const url = 'mongodb+srv://maisarah:Atlas0122@cluster0.eb6q4xm.mongodb.net/vms'; // the url to the database
+const url = 'mongodb+srv://maisarah:atlas0122@cluster0.eb6q4xm.mongodb.net'; // the url to the database
 const client = new MongoClient(url); // create a new mongodb client
 
 // bcrypt middleware
