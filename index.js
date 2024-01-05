@@ -1,11 +1,11 @@
 const express = require('express');
 const session = require('express-session');
 const app = express();
-const port = 3000;
+const port = process.env.PORT;
 
 // session middleware
 app.use(session({
-    secret: 'supercalifragilisticexpialidocious', // a random string used for encryption
+    secret: process.env.SECRET, // a random string used for encryption
     resave: false, // don't save session if unmodified
     saveUninitialized: false // don't create session until something stored
 }));
@@ -13,8 +13,8 @@ app.use(session({
 // json middleware
 app.use(express.json());
 
-// qr code middleware
-var QRCode = require('qrcode')
+// // qr code middleware
+// var QRCode = require('qrcode')
 
 // swagger middleware
 const swaggerUi = require('swagger-ui-express');
@@ -37,6 +37,7 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs));
 /**
  * @swagger
  * tags:
+ *   - name: Test
  *   - name: Visitor
  *   - name: Login
  *   - name: Admin
@@ -48,7 +49,7 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs));
 const {
     MongoClient
 } = require('mongodb'); // import the mongodb client
-const url = 'mongodb+srv://maisarah:atlas0122@cluster0.eb6q4xm.mongodb.net'; // the url to the database
+const url = 'mongodb+srv://maisarah:<password>@cluster0.eb6q4xm.mongodb.net/vms'; // the url to the database
 const client = new MongoClient(url); // create a new mongodb client
 
 // bcrypt middleware
@@ -191,6 +192,73 @@ async function run() {
             else {
                 res.send("You are not logged in");
             }
+        });
+
+        /**
+         * @swagger
+         * /register/test/resident:
+         *   post:
+         *     tags:
+         *       - Test
+         *     description: Register a new resident without admin approval
+         *     requestBody:
+         *       required: true
+         *       content:
+         *         application/json:
+         *           schema:
+         *             type: object
+         *             properties:
+         *               _id:
+         *                 type: string
+         *               password:
+         *                 type: string
+         *               name:
+         *                 type: string
+         *               apartment:
+         *                 type: string
+         *               mobile:
+         *                 type: string
+         *     responses:
+         *       200:
+         *         description: Connection successful
+         */
+
+
+        app.post('/register/test/resident', async (req, res) => {
+            data = req.body;
+            try {
+                //check if user already exists
+                result = await client.db("Assignment").collection("Users").findOne({
+                    _id: data._id,
+                    role: "resident"
+                });
+
+                if (result) {
+                    res.send("User already exists");
+                } else {
+                    //hash password
+                    const hashedPassword = await bcrypt.hash(data.password, saltRounds);
+
+                    //insert user
+                    const result = await client.db("Assignment").collection("Users").insertOne({
+                        _id: data._id,
+                        password: hashedPassword,
+                        role: "resident",
+                        name: data.name,
+                        apartment: data.apartment,
+                        mobile: data.mobile,
+                        pendingvisitors: [],
+                        incomingvisitors: [],
+                        pastvisitors: [],
+                        blockedvisitors: []
+                    });
+
+                    res.send('New resident created with the following id: ' + result.insertedId);
+                }
+            } catch (e) {
+                res.send("Error creating new resident");
+            }
+                
         });
 
         /**
@@ -383,8 +451,6 @@ async function run() {
          *           schema:
          *             type: object
          *             properties:
-         *               host:
-         *                 type: string
          *               apartment:
          *                 type: string
          *               name:
@@ -421,25 +487,35 @@ async function run() {
                 // insert visitor into database
                 const result = await client.db("Assignment").collection("Visitors").insertOne(data);
 
-                // generate QR code
-                QRCode.toDataURL(data._id, (err, url) => {
-                    if (err) {
-                        res.send('Error generating QR code');
-                    } else {
-                        res.send({
-                            "message": "Your visitor request has been submitted, Please wait for approval from your host.",
-                            "qrcode": url,
-                            "visitorid": data._id,
-                            "host": data.host,
-                            "apartment": data.apartment,
-                            "name": data.name,
-                            "carplate": data.carplate,
-                            "identification": data.identification,
-                            "mobile": data.mobile,
-                            "visitpurpose": data.visitpurpose,
-                        });
-                    }
+                res.send({
+                    "message": "Your visitor request has been submitted, Please wait for approval from your host.",
+                    "visitorid": data._id,
+                    "apartment": data.apartment,
+                    "name": data.name,
+                    "carplate": data.carplate,
+                    "identification": data.identification,
+                    "mobile": data.mobile,
+                    "visitpurpose": data.visitpurpose,
                 });
+
+                // // generate QR code
+                // QRCode.toDataURL(data._id, (err, url) => {
+                //     if (err) {
+                //         res.send('Error generating QR code');
+                //     } else {
+                //         res.send({
+                //             "message": "Your visitor request has been submitted, Please wait for approval from your host.",
+                //             "qrcode": url,
+                //             "visitorid": data._id,
+                //             "apartment": data.apartment,
+                //             "name": data.name,
+                //             "carplate": data.carplate,
+                //             "identification": data.identification,
+                //             "mobile": data.mobile,
+                //             "visitpurpose": data.visitpurpose,
+                //         });
+                //     }
+                // });
 
                 // // generate QR code
                 // QRCode.toString(data._id, {
@@ -457,7 +533,6 @@ async function run() {
                 //             // "qrcode": string,
                 //             "qrcode": spacedString,
                 //             "visitorid": data._id,
-                //             "host": data.host,
                 //             "apartment": data.apartment,
                 //             "name": data.name,
                 //             "carplate": data.carplate,
@@ -468,7 +543,7 @@ async function run() {
                 //     }
                 // });
             } catch (e) {
-                res.send("Error creating new listing,either host or apartment not found");
+                res.send("Error creating new listing, apartment not found");
             }
         });
 
@@ -543,7 +618,6 @@ async function run() {
                             {
                                 $project: {
                                     _id: 1,
-                                    host: 1,
                                     apartment: 1,
                                     name: 1,
                                     carplate: 1,
@@ -637,7 +711,6 @@ async function run() {
                             {
                                 $project: {
                                     _id: 1,
-                                    host: 1,
                                     apartment: 1,
                                     name: 1,
                                     carplate: 1,
@@ -661,7 +734,7 @@ async function run() {
                         // list all pending visitors
                         result = await client.db("Assignment").collection("Visitors").aggregate([{
                                 $match: {
-                                    host: req.session.user.username,
+                                    apartment: req.session.user.apartment,
                                     status: "pending"
                                 }
                             },
@@ -729,7 +802,6 @@ async function run() {
                             {
                                 $project: {
                                     _id: 1,
-                                    host: 1,
                                     apartment: 1,
                                     name: 1,
                                     carplate: 1,
@@ -821,7 +893,6 @@ async function run() {
                             {
                                 $project: {
                                     _id: 1,
-                                    host: 1,
                                     apartment: 1,
                                     name: 1,
                                     carplate: 1,
@@ -919,7 +990,6 @@ async function run() {
                             {
                                 $project: {
                                     _id: 1,
-                                    host: 1,
                                     apartment: 1,
                                     name: 1,
                                     carplate: 1,
@@ -998,8 +1068,6 @@ async function run() {
          *           schema:
          *             type: object
          *             properties:
-         *               host:
-         *                 type: string
          *               apartment:
          *                 type: string
          *               name:
@@ -1022,12 +1090,10 @@ async function run() {
                 if (req.session.user.role == "resident") {
                     req.body._id = visitoridgenerator();
                     req.body.status = "approved";
-                    req.body.host = req.session.user.username;
                     req.body.apartment = req.session.user.apartment;
                     data = req.body;
                     try {
                         await client.db("Assignment").collection("Users").updateOne({
-                            _id: data.host,
                             apartment: data.apartment
                         }, {
                             $push: {
@@ -1037,7 +1103,6 @@ async function run() {
 
                         const result = await client.db("Assignment").collection("Visitors").insertOne({
                             _id: data._id,
-                            host: data.host,
                             apartment: data.apartment,
                             name: data.name,
                             carplate: data.carplate,
@@ -1047,24 +1112,34 @@ async function run() {
                             status: data.status
                         });
 
-                        QRCode.toDataURL(data._id,(err, url) => {
-                            if (err) {
-                                res.send('Error generating QR code');
-                            } else {
-                                res.send({
-                                    "message": "You have created a new visitor invite, Please send the QR code to your visitor.",
-                                    "qrcode": url,
-                                    "visitorid": data._id,
-                                    "host": data.host,
-                                    "apartment": data.apartment,
-                                    "name": data.name,
-                                    "carplate": data.carplate,
-                                    "identification": data.identification,
-                                    "mobile": data.mobile,
-                                    "visitpurpose": data.visitpurpose,
-                                });
-                            }
+                        res.send({
+                            "message": "You have created a new visitor invite, Please send the visitorid to your visitor.",
+                            "visitorid": data._id,
+                            "apartment": data.apartment,
+                            "name": data.name,
+                            "carplate": data.carplate,
+                            "identification": data.identification,
+                            "mobile": data.mobile,
+                            "visitpurpose": data.visitpurpose,
                         });
+
+                        // QRCode.toDataURL(data._id,(err, url) => {
+                        //     if (err) {
+                        //         res.send('Error generating QR code');
+                        //     } else {
+                        //         res.send({
+                        //             "message": "You have created a new visitor invite, Please send the QR code to your visitor.",
+                        //             "qrcode": url,
+                        //             "visitorid": data._id,
+                        //             "apartment": data.apartment,
+                        //             "name": data.name,
+                        //             "carplate": data.carplate,
+                        //             "identification": data.identification,
+                        //             "mobile": data.mobile,
+                        //             "visitpurpose": data.visitpurpose,
+                        //         });
+                        //     }
+                        // });
 
                         // QRCode.toString(data._id, {
                         //     type: "utf8"
@@ -1081,7 +1156,6 @@ async function run() {
                         //             // "qrcode": string,
                         //             "qrcode": spacedString,
                         //             "visitorid": data._id,
-                        //             "host": data.host,
                         //             "apartment": data.apartment,
                         //             "name": data.name,
                         //             "carplate": data.carplate,
@@ -1126,7 +1200,6 @@ async function run() {
         app.post('/dashboard/approve', async (req, res) => {
             if (req.session.user) {
                 if (req.session.user.role == "resident") {
-                    host = req.session.user.username;
                     apartment = req.session.user.apartment;
                     data = req.body;
                     try {
@@ -1150,7 +1223,6 @@ async function run() {
                                 });
 
                                 await client.db("Assignment").collection("Users").updateOne({
-                                    _id: host,
                                     apartment: apartment
                                 }, {
                                     $pull: {
@@ -1207,7 +1279,6 @@ async function run() {
         app.post('/dashboard/reject', async (req, res) => {
             if (req.session.user) {
                 if (req.session.user.role == "resident") {
-                    host = req.session.user.username;
                     apartment = req.session.user.apartment;
                     data = req.body;
                     try {
@@ -1230,7 +1301,6 @@ async function run() {
                                 });
 
                                 await client.db("Assignment").collection("Users").updateOne({
-                                    _id: host,
                                     apartment: apartment
                                 }, {
                                     $pull: {
