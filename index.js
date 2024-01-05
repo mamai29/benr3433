@@ -13,8 +13,9 @@ app.use(session({
 // json middleware
 app.use(express.json());
 
-// // qr code middleware
-// var QRCode = require('qrcode')
+// qr code middleware
+const QRCode = require('qrcode');
+
 
 // swagger middleware
 const swaggerUi = require('swagger-ui-express');
@@ -49,7 +50,7 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs));
 const {
     MongoClient
 } = require('mongodb'); // import the mongodb client
-const url = 'mongodb+srv://maisarah:<password>@cluster0.eb6q4xm.mongodb.net/vms'; // the url to the database
+const url = 'mongodb+srv://maisarah:Atlas0122@cluster0.eb6q4xm.mongodb.net/vms'; // the url to the database
 const client = new MongoClient(url); // create a new mongodb client
 
 // bcrypt middleware
